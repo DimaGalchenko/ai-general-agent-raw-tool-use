@@ -34,28 +34,52 @@ class WebSearchTool(BaseTool):
 
     @property
     def name(self) -> str:
-        #TODO: Provide tool name as `web_search_tool`
-        raise NotImplementedError()
+        # TODO: Provide tool name as `web_search_tool`
+        return 'web_search_tool'
 
     @property
     def description(self) -> str:
-        #TODO: Provide description of this tool
-        raise NotImplementedError()
+        # TODO: Provide description of this tool
+        return "Tool that provides ability to search in the WEB."
 
     @property
     def input_schema(self) -> dict[str, Any]:
-        #TODO: Provide tool params Schema (it applies `request` string to search by)
-        raise NotImplementedError()
+        # TODO: Provide tool params Schema (it applies `request` string to search by)
+        return {
+            "type": "object",
+            "properties": {
+                "request": {
+                    "type": "string",
+                    "description": "The search query or question to search for on the web."
+                }
+            },
+            "required": ["request"]
+        }
 
     def execute(self, arguments: dict[str, Any]) -> str:
-        #TODO:
-        # https://platform.openai.com/docs/guides/tools-web-search?api-mode=chat
-        # 1. Create `headers` dict: "Authorization": self.__api_key, "Content-Type": "application/json"
-        # 2. Create `request_data` dict with:
-        #    - "model": "gpt-4o-search-preview"
-        #    - "messages": [{"role": "user", "content": str(arguments["request"])}]
-        #    - "tools": [{"type": "static_function", "static_function": {"name": "google_search", "description": "Grounding with Google Search","configuration": {}}}]
-        #    - "temperature": 0
-        # 3. Make POST call with `requests` lib: `url=self.__endpoint, headers=headers, json=request_dat`
-        # 4. Check if response status is 200 and if yes then return message content, otherwise return `f"Error: {response.status_code} {response.text}"`
-        raise NotImplementedError()
+        headers = {
+            "Authorization": self.__api_key,
+            "Content-Type": "application/json"
+        }
+
+        request_data = {
+            "model": "gpt-4o-mini-search-preview",  # or "gpt-4o-search-preview"
+            "messages": [
+                {"role": "user", "content": str(arguments["request"])}
+            ]
+        }
+
+        response = requests.post(
+            url=self.__endpoint,
+            headers=headers,
+            json=request_data
+        )
+
+        if response.status_code == 200:
+            try:
+                data = response.json()
+                return data["choices"][0]["message"]["content"]
+            except Exception as e:
+                return f"Error parsing response: {e}"
+        else:
+            raise Exception(f"Error: {response.status_code} {response.text}")

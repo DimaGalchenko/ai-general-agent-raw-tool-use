@@ -1,5 +1,6 @@
 import os
 
+from task.constants import OPENAI_API_KEY
 from task.openai_client import OpenAIClient
 from task.models.conversation import Conversation
 from task.models.message import Message
@@ -13,8 +14,6 @@ from task.tools.users.update_user_tool import UpdateUserTool
 from task.tools.users.user_client import UserClient
 from task.tools.web_search import WebSearchTool
 
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-
 def main():
     #TODO:
     # 1. Create UserClient
@@ -25,7 +24,26 @@ def main():
     #    - Add User message to Conversation
     #    - Call OpenAIClient with conversation history
     #    - Add Assistant message to Conversation and print its content
-    raise NotImplementedError()
+    user_client = UserClient()
+    openai_client = OpenAIClient(
+        model="gpt-4o-mini",
+        api_key=OPENAI_API_KEY,
+        tools=[
+            WebSearchTool(OPENAI_API_KEY),
+            GetUserByIdTool(user_client),
+            SearchUsersTool(user_client),
+            CreateUserTool(user_client),
+            UpdateUserTool(user_client),
+            DeleteUserTool(user_client),
+        ]
+    )
+    messages = [Message(role=Role.SYSTEM, content=SYSTEM_PROMPT)]
+    while True:
+        user_reqeust = input("> ").strip()
+        messages.append(Message(role=Role.USER, content=user_reqeust))
+        response = openai_client.get_completion(messages=messages)
+        messages.append(response)
+        print(f'AI response: {response.content}')
 
 
 main()
